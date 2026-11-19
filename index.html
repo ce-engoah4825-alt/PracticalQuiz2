@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dining Table Scene (A-Frame)</title>
+<script src="aframe.js"></script>
+<style>
+  html, body { margin: 0; height: 100%; background: #1a1a1a; }
+  #hint { position: fixed; left: 12px; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); padding: 6px 10px;
+          border-radius: 8px; background: rgba(0,0,0,.55); color: #fff; font: 13px system-ui, sans-serif; z-index: 5; }
+</style>
+<script>
+// Helper: create a child entity with attributes
+const mk = (p, t, a) => { const e = document.createElement(t); for (const k in a) e.setAttribute(k, a[k]); p.appendChild(e); return e; };
+
+// ---------- Chair (all primitives) ----------
+AFRAME.registerComponent('chair', { init() {
+  const el = this.el, w = '#8a5a33';
+  mk(el, 'a-box', { width: .46, height: .05, depth: .46, position: '0 .45 0', color: w });
+  mk(el, 'a-box', { width: .42, height: .04, depth: .42, position: '0 .495 0', color: '#b5483a' });
+  [[-.2,-.2],[.2,-.2],[-.2,.2],[.2,.2]].forEach(([x, z]) => mk(el, 'a-cylinder', { radius: .02, height: .43, position: `${x} .215 ${z}`, color: w }));
+  [-.2, .2].forEach(x => mk(el, 'a-cylinder', { radius: .02, height: .5, position: `${x} .7 .2`, color: w }));
+  [.9, .78, .66].forEach(y => mk(el, 'a-box', { width: .4, height: .07, depth: .02, position: `0 ${y} .2`, color: w }));
+}});
+
+// ---------- Place setting: plate, fork, knife, water glass, optional cup + saucer ----------
+AFRAME.registerComponent('setting', { schema: { cup: { default: false } }, init() {
+  const el = this.el, steel = { color: '#d8d8dc', metalness: .8, roughness: .25 };
+  const m = (t, a, extra) => mk(el, t, Object.assign(a, extra || {}));
+  m('a-cylinder', { radius: .1, height: .012, position: '0 .006 0', color: '#ffffff' });
+  m('a-cylinder', { radius: .068, height: .014, position: '0 .007 0', color: '#eef2f7' });
+  // fork
+  m('a-box', { width: .012, height: .004, depth: .12, position: '-.14 .003 .03' }, steel);
+  m('a-box', { width: .026, height: .004, depth: .045, position: '-.14 .003 -.05' }, steel);
+  // knife
+  m('a-box', { width: .012, height: .004, depth: .09, position: '.14 .003 .05' }, steel);
+  m('a-box', { width: .02, height: .004, depth: .09, position: '.14 .003 -.04' }, steel);
+  // water glass
+  m('a-cylinder', { radius: .03, height: .1, position: '.2 .05 -.13', color: '#bfe3ff', opacity: .3, transparent: true, 'open-ended': true, side: 'double' });
+  m('a-cylinder', { radius: .027, height: .07, position: '.2 .037 -.13', color: '#6fc3f0', opacity: .65, transparent: true });
+  m('a-cylinder', { radius: .03, height: .006, position: '.2 .003 -.13', color: '#dff0ff' });
+  if (this.data.cup) {
+    m('a-cylinder', { radius: .065, height: .008, position: '-.2 .004 -.13', color: '#ffffff' });
+    m('a-cylinder', { radius: .038, height: .065, position: '-.2 .0405 -.13', color: '#ffffff', 'open-ended': true, side: 'double' });
+    m('a-circle', { radius: .038, position: '-.2 .009 -.13', rotation: '-90 0 0', color: '#ffffff' });
+    m('a-circle', { radius: .034, position: '-.2 .062 -.13', rotation: '-90 0 0', color: '#4b2e1b' });
+    m('a-torus', { radius: .02, 'radius-tubular': .005, position: '-.158 .045 -.13', color: '#ffffff' });
+  }
+}});
+
+// ---------- Flower: stem + yellow centre + ring of petals ----------
+AFRAME.registerComponent('flower', { schema: { color: { default: '#e84a5f' }, h: { default: .24 } }, init() {
+  const el = this.el, h = this.data.h;
+  mk(el, 'a-cylinder', { radius: .004, height: h, position: `0 ${h / 2} 0`, color: '#3f8f3a' });
+  mk(el, 'a-sphere', { radius: .016, position: `0 ${h} 0`, color: '#f4c20d' });
+  for (let i = 0; i < 8; i++) {
+    const a = i * Math.PI / 4;
+    mk(el, 'a-sphere', { radius: .017, scale: '1 .4 1', position: `${Math.cos(a) * .03} ${h} ${Math.sin(a) * .03}`, color: this.data.color });
+  }
+  mk(el, 'a-sphere', { radius: .012, scale: '2 .3 1', position: `.012 ${h * .5} 0`, rotation: '0 0 30', color: '#3f8f3a' });
+}});
+</script>
+</head>
+<body>
+<div id="hint">Drag to look around &bull; W A S D to move</div>
+
+<script>
+// Canvas textures for the tin labels (no external fonts or images needed)
+function label(id, text, bg, fg) {
+  const c = document.createElement('canvas'); c.id = id; c.width = 256; c.height = 128; c.style.display = 'none';
+  const x = c.getContext('2d'); x.fillStyle = bg; x.fillRect(0, 0, 256, 128);
+  x.fillStyle = fg; x.font = 'bold 72px Arial, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+  x.fillText(text, 128, 66); document.body.appendChild(c);
+}
+label('miloLabel', 'MILO', '#1b6b2a', '#ffffff');
+label('milkLabel', 'MILK', '#1c5fb0', '#ffffff');
+</script>
+
+<a-scene background="color: #cfe3f5" renderer="colorManagement: true">
+
+  <!-- Camera -->
+  <a-camera position="0 1.65 2.9" rotation="-22 0 0" wasd-controls="acceleration: 20"></a-camera>
+
+  <!-- Lights -->
+  <a-entity light="type: ambient; color: #ffffff; intensity: .65"></a-entity>
+  <a-entity light="type: directional; color: #fff4e0; intensity: .55" position="-2 4 3"></a-entity>
+  <a-entity light="type: point; color: #ffe2b0; intensity: .9; distance: 7" position="0 1.8 0"></a-entity>
+
+  <!-- Room -->
+  <a-plane rotation="-90 0 0" width="8" height="8" color="#8b6b4a"></a-plane>
+  <a-cylinder radius="1.8" height=".01" position="0 .005 0" color="#d9c7a5"></a-cylinder>
+  <a-plane position="0 1.6 -3" width="8" height="3.2" color="#eadfca"></a-plane>
+  <a-plane position="-4 1.6 0" rotation="0 90 0" width="8" height="3.2" color="#e3d6bf"></a-plane>
+  <a-box position="0 1.7 -2.97" width="1.2" height=".8" depth=".04" color="#5a3b22"></a-box>
+  <a-plane position="0 1.7 -2.945" width="1.08" height=".68" color="#8ec5e8"></a-plane>
+  <a-circle position="0.25 1.8 -2.94" radius=".1" color="#ffd54a"></a-circle>
+  <a-triangle position="-.25 1.5 -2.935" vertex-a="0 .35 0" vertex-b="-.45 0 0" vertex-c=".45 0 0" color="#4f8a4b"></a-triangle>
+
+  <!-- Corner plant -->
+  <a-cylinder position="-2.6 .15 -2.4" radius=".16" height=".3" color="#a0522d"></a-cylinder>
+  <a-sphere position="-2.6 .6 -2.4" radius=".28" color="#2f7d32"></a-sphere>
+  <a-sphere position="-2.45 .85 -2.35" radius=".2" color="#3b9440"></a-sphere>
+  <a-sphere position="-2.75 .8 -2.5" radius=".2" color="#2a7030"></a-sphere>
+
+  <!-- Pendant lamp -->
+  <a-cylinder position="0 2.6 0" radius=".006" height="1.3" color="#222"></a-cylinder>
+  <a-cone position="0 1.95 0" radius-bottom=".28" radius-top=".07" height=".2" color="#e0a526" side="double"></a-cone>
+  <a-sphere position="0 1.88 0" radius=".05" material="shader: flat; color: #fff6d6"></a-sphere>
+
+  <!-- Table -->
+  <a-box position="0 .76 0" width="1.6" height=".06" depth="1" color="#6b4423"></a-box>
+  <a-cylinder position="-.72 .38 -.42" radius=".04" height=".76" color="#6b4423"></a-cylinder>
+  <a-cylinder position=".72 .38 -.42" radius=".04" height=".76" color="#6b4423"></a-cylinder>
+  <a-cylinder position="-.72 .38 .42" radius=".04" height=".76" color="#6b4423"></a-cylinder>
+  <a-cylinder position=".72 .38 .42" radius=".04" height=".76" color="#6b4423"></a-cylinder>
+
+  <!-- Tablecloth: top, hanging sides, red runner -->
+  <a-box position="0 .8 0" width="1.8" height=".02" depth="1.2" color="#f7f1e3"></a-box>
+  <a-box position="0 .675 .6" width="1.8" height=".25" depth=".012" color="#f7f1e3"></a-box>
+  <a-box position="0 .675 -.6" width="1.8" height=".25" depth=".012" color="#f7f1e3"></a-box>
+  <a-box position=".9 .675 0" width=".012" height=".25" depth="1.2" color="#efe7d4"></a-box>
+  <a-box position="-.9 .675 0" width=".012" height=".25" depth="1.2" color="#efe7d4"></a-box>
+  <a-box position="0 .811 0" width="1.8" height=".002" depth=".28" color="#b83a3a"></a-box>
+
+  <!-- Chairs (two each side) -->
+  <a-entity chair position="-.4 0 .82"></a-entity>
+  <a-entity chair position=".4 0 .82"></a-entity>
+  <a-entity chair position="-.4 0 -.82" rotation="0 180 0"></a-entity>
+  <a-entity chair position=".4 0 -.82" rotation="0 180 0"></a-entity>
+
+  <!-- Place settings: plate, cutlery, glass of water (4 glasses). Cups on two of them (2 cups). -->
+  <a-entity setting="cup: true"  position="-.4 .81 .32"></a-entity>
+  <a-entity setting="cup: false" position=".4 .81 .32"></a-entity>
+  <a-entity setting="cup: false" position="-.4 .81 -.32" rotation="0 180 0"></a-entity>
+  <a-entity setting="cup: true"  position=".4 .81 -.32" rotation="0 180 0"></a-entity>
+
+  <!-- MILO tin -->
+  <a-entity position="-.65 .81 0">
+    <a-cylinder radius=".055" height=".15" position="0 .075 0" color="#2f8f3c"></a-cylinder>
+    <a-cylinder radius=".058" height=".015" position="0 .1575 0" color="#1f6a2a"></a-cylinder>
+    <a-cylinder radius=".0565" height=".07" position="0 .075 0" theta-start="-50" theta-length="100" open-ended="true" side="double" material="src: #miloLabel"></a-cylinder>
+  </a-entity>
+
+  <!-- Milk tin -->
+  <a-entity position="-.5 .81 0">
+    <a-cylinder radius=".05" height=".11" position="0 .055 0" color="#f6f6f6"></a-cylinder>
+    <a-cylinder radius=".052" height=".01" position="0 .115 0" color="#c8c8c8"></a-cylinder>
+    <a-cylinder radius=".0508" height=".05" position="0 .055 0" theta-start="-50" theta-length="100" open-ended="true" side="double" material="src: #milkLabel"></a-cylinder>
+  </a-entity>
+
+  <!-- Flower vase -->
+  <a-entity position="-.28 .81 0">
+    <a-cylinder radius=".045" height=".16" position="0 .08 0" color="#4a7fb5" opacity=".85" transparent="true"></a-cylinder>
+    <a-cylinder radius=".03" height=".05" position="0 .185 0" color="#4a7fb5" opacity=".85" transparent="true"></a-cylinder>
+    <a-entity flower="color: #e84a5f; h: .26" position="0 .2 0"></a-entity>
+    <a-entity flower="color: #ff9ecb; h: .22" position="0 .2 0" rotation="14 0 14"></a-entity>
+    <a-entity flower="color: #ffffff; h: .22" position="0 .2 0" rotation="-14 0 -12"></a-entity>
+    <a-entity flower="color: #ff8c2a; h: .2" position="0 .2 0" rotation="12 0 -22"></a-entity>
+  </a-entity>
+
+  <!-- Salad bowl -->
+  <a-entity position="0 .81 0">
+    <a-sphere radius=".15" position="0 .15 0" theta-start="90" theta-length="90" side="double" color="#f3ead8"></a-sphere>
+    <a-torus radius=".15" radius-tubular=".006" position="0 .15 0" rotation="90 0 0" color="#e6d9bd"></a-torus>
+    <a-sphere radius=".12" scale="1 .5 1" position="0 .14 0" color="#5aa63a"></a-sphere>
+    <a-sphere radius=".05" scale="1 .6 1" position=".05 .17 .02" color="#74c04a"></a-sphere>
+    <a-sphere radius=".05" scale="1 .6 1" position="-.05 .17 -.03" color="#4d9433"></a-sphere>
+    <a-sphere radius=".022" position=".06 .19 .06" color="#d63a2f"></a-sphere>
+    <a-sphere radius=".022" position="-.07 .19 .03" color="#d63a2f"></a-sphere>
+    <a-sphere radius=".022" position=".0 .2 -.07" color="#d63a2f"></a-sphere>
+    <a-cylinder radius=".025" height=".006" position="-.02 .2 .05" rotation="20 0 10" color="#2f7d32"></a-cylinder>
+    <a-cylinder radius=".025" height=".006" position=".07 .19 -.04" rotation="-15 0 20" color="#2f7d32"></a-cylinder>
+    <a-sphere radius=".012" position="-.08 .19 -.06" color="#3a2250"></a-sphere>
+    <a-sphere radius=".012" position=".02 .2 .09" color="#3a2250"></a-sphere>
+  </a-entity>
+
+  <!-- Bread on a board -->
+  <a-entity position=".45 .81 0">
+    <a-box width=".32" height=".02" depth=".2" position="0 .01 0" color="#b98a54"></a-box>
+    <a-sphere radius=".07" scale="1.8 .8 .9" position="0 .076 0" color="#c98a3c"></a-sphere>
+    <a-box width=".02" height=".004" depth=".08" position="-.06 .132 0" rotation="0 25 0" color="#9a5f26"></a-box>
+    <a-box width=".02" height=".004" depth=".08" position="0 .134 0" rotation="0 25 0" color="#9a5f26"></a-box>
+    <a-box width=".02" height=".004" depth=".08" position=".06 .132 0" rotation="0 25 0" color="#9a5f26"></a-box>
+  </a-entity>
+
+</a-scene>
+</body>
+</html>
